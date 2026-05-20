@@ -103,8 +103,8 @@ function AvatarGroupCount({
 }
 
 export {
-  Avatar,
   AvatarImage,
+  Avatar,
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,

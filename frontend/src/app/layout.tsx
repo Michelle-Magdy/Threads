@@ -4,8 +4,12 @@ import {
 } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+import { Toaster } from "sonner";
+
+const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +37,7 @@ export default function RootLayout({
         theme: dark,
       }}
     >
-      <html lang="en" className="dark">
+      <html lang="en" className={cn("dark", "font-sans", dmSans.variable)}>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
@@ -45,6 +49,7 @@ export default function RootLayout({
               </div>
             </main>
           </div>
+          <Toaster/>
         </body>
       </html>
     </ClerkProvider>
