@@ -1,8 +1,8 @@
 
-export default function Home() {
+export default function ThreadsPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <h1>Home page</h1>      
+    <div className="flex w-full flex-1 flex-col">
+      
     </div>
   );
 }

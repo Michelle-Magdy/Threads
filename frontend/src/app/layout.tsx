@@ -8,6 +8,7 @@ import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
+import Navbar from "@/components/layout/Navbar";
 
 const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'});
 
@@ -42,7 +43,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <div className="flex min-h-screen flex-col bg-background text-foreground">
-            {/* nav bar */}
+            <Navbar/>
             <main className="flex flex-1 flex-col ">
               <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 md:py-10">
                 {children}

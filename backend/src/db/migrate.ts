@@ -31,7 +31,7 @@ async function runMigrations() {
 
 runMigrations()
   .then(() => {
-    logger.info("All migrations runed successfully");
+    logger.info("All migrations runned successfully");
     process.exit(1);
   })
   .catch((err) => {

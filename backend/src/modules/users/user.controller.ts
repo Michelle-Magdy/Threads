@@ -8,7 +8,6 @@ import {
 } from "./user.types.js";
 import { getUserFromClerk, updateUserProfile } from "./user.service.js";
 import { z } from "zod";
-import { logger } from "../../lib/logger.js";
 
 const UserProfileUpdateSchema = z.object({
   displayName: z.string().trim().max(50).min(3).optional(),

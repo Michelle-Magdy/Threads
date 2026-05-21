@@ -1,5 +1,5 @@
 import { Router} from "express";
-import { getMeHandler, updateMeHandler } from "../modules/users/user.contoller.js";
+import { getMeHandler, updateMeHandler } from "../modules/users/user.controller.js";
 
 
 const userRouter = Router();
