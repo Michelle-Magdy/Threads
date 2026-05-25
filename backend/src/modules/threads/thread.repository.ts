@@ -29,14 +29,15 @@ export async function createNewThread(params: {
   categorySlug: string;
   authorId: number;
 }): Promise<ThreadDetail> {
-  const { title, body, categorySlug, authorId } = params;
+  const { title, body, categorySlug, authorId } = params; 
+  
 
   const categoryRes = await query<{ id: number }>(
     `
         SELECT id
-        FROM categories,
+        FROM categories
         WHERE slug = $1
-        LIMIT 1
+        LIMIT 1;
         `,
     [categorySlug],
   );
@@ -55,7 +56,6 @@ export async function createNewThread(params: {
     [categoryId, authorId, title, body],
   );
   const threadId = result.rows[0].id;
-
   return await getThreadById(threadId);
 }
 
@@ -72,7 +72,7 @@ export async function getThreadById(threadId: number): Promise<ThreadDetail> {
             u.handle as author_handle, 
             u.avatar_url as author_avatar_url,  
             t.created_at,
-            t.updated.at
+            t.updated_at
         FROM threads as t
         JOIN categories as c ON t.category_id = c.id
         JOIN users as u ON t.author_id = u.id

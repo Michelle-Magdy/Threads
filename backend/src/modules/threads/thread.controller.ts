@@ -9,7 +9,6 @@ const ThreadSchema = z.object({
     title:z.string().trim().min(3),
     body: z.string().trim().min(10),
     categorySlug:z.string().trim(),
-
 })
 
 

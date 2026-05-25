@@ -64,8 +64,6 @@ function ProfilePage() {
           apiClient,
           "/api/v1/me",
         );
-        console.log("test");
-        console.log(getUserInfo);
         if (isMounted) {
           form.reset({
             displayName: getUserInfo.displayName ?? "",
