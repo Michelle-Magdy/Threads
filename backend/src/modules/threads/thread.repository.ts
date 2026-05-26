@@ -9,6 +9,7 @@ import {
   ThreadDetail,
   ThreadDetailRow,
   ThreadListFilter,
+  ThreadListResult,
   ThreadSummary,
   ThreadSummaryRow,
 } from "./thread.types.js";
@@ -29,8 +30,7 @@ export async function createNewThread(params: {
   categorySlug: string;
   authorId: number;
 }): Promise<ThreadDetail> {
-  const { title, body, categorySlug, authorId } = params; 
-  
+  const { title, body, categorySlug, authorId } = params;
 
   const categoryRes = await query<{ id: number }>(
     `
@@ -71,6 +71,8 @@ export async function getThreadById(threadId: number): Promise<ThreadDetail> {
             u.display_name as author_display_name, 
             u.handle as author_handle, 
             u.avatar_url as author_avatar_url,  
+            t.likes_count,
+            t.comments_count,
             t.created_at,
             t.updated_at
         FROM threads as t
@@ -97,8 +99,8 @@ export function parseThreadsFilterList(queryObj: {
   const { page, limit, categorySlug, q, sort } = queryObj;
 
   const pageNumber = Number(page) || 1;
-  const rawPageSize = Number(limit) || 20;
-  const pageSize = Math.min(Math.max(rawPageSize, 20), 30);
+  const rawPageSize = Number(limit) || 5;
+  const pageSize = Math.min(Math.max(rawPageSize, 5), 5);
   const parsedCategorySlug =
     typeof categorySlug === "string" && categorySlug.length
       ? categorySlug.trim()
@@ -115,36 +117,82 @@ export function parseThreadsFilterList(queryObj: {
   };
 }
 
-export async function listThreads(
-  filters: ThreadListFilter,
-): Promise<ThreadSummary[]> {
-  const { page, limit, categorySlug, sort, search } = filters;
+async function countThreads(filters: ThreadListFilter): Promise<number> {
+  const { categorySlug, search } = filters;
 
-  const conditions: unknown[] = [];
   const params: unknown[] = [];
-
-  let idx = 0;
+  const conditions: string[] = [];
 
   if (categorySlug) {
-    conditions.push(`c.slug = $${idx++}`);
-    params.push(categorySlug);
+    params.push(categorySlug.trim());
+    conditions.push(`c.slug = $${params.length}`);
   }
 
   if (search) {
-    conditions.push(`t.title ILIKE $${idx} OR t.body ILIKE $${idx}`);
-    params.push(`%${search}%`);
-    idx++;
+    params.push(`%${search.trim()}%`);
+    conditions.push(
+      `t.title ILIKE $${params.length} OR t.body ILIKE $${params.length}`,
+    );
   }
 
   const whereClause = conditions.length
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
-  const sortClause = `ORDER BY t.created_at ${sort === "old" ? "DESC" : "ASC"}`;
+
+  const result = await query<{ count: string }>(
+    `
+      SELECT COUNT(*) AS count
+      FROM threads AS t
+      JOIN categories as c ON t.category_id = c.id
+      ${whereClause}
+      `,
+    params,
+  );
+
+  return parseInt(result.rows[0].count, 10);
+}
+
+export async function listThreads(
+  filters: ThreadListFilter,
+): Promise<ThreadListResult> {
+  const { page=1, limit = 5, categorySlug, sort, search } = filters;
+
+  // Get total count first
+  const totalCount = await countThreads(filters);
+  const totalPages = Math.ceil(totalCount / limit);
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (categorySlug) {
+    params.push(categorySlug);
+    conditions.push(`c.slug = $${params.length}`); // If first, params.length is 1 -> $1
+  }
+
+  if (search) {
+    params.push(`%${search}%`);
+    // Both placeholders need to point to the exact same parameter index
+    conditions.push(
+      `(t.title ILIKE $${params.length} OR t.body ILIKE $${params.length})`,
+    );
+  }
+
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
+
+  const sortClause = `ORDER BY t.created_at ${sort === "old" ? "ASC" : "DESC"}`; // Fixed: 'old' should typically be ASC (oldest first)
   const offset = (page - 1) * limit;
 
-  params.push(limit, offset);
+  // Push limit and offset last
+  params.push(limit);
+  const limitPlaceholder = `$${params.length}`;
 
-  const result = await query<ThreadSummaryRow>(`
+  params.push(offset);
+  const offsetPlaceholder = `$${params.length}`;
+
+  const result = await query<ThreadSummaryRow>(
+    `
         SELECT 
             t.id,
             t.title, 
@@ -155,14 +203,23 @@ export async function listThreads(
             u.handle as author_handle, 
             u.avatar_url as author_avatar_url,  
             t.created_at,
-            t.updated.at
+            t.updated_at
         FROM threads as t
         JOIN categories as c ON t.category_id = c.id
         JOIN users as u ON t.author_id = u.id
         ${whereClause}
         ${sortClause}
-        LIMIT $${idx++} OFFSET $${idx}
-    `,params);
+        LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}
+    `,
+    params,
+  );
 
-    return result.rows.map(hydrateThreadSummaryRow)
+  
+  return {
+    threads: result.rows.map(hydrateThreadSummaryRow),
+    totalPages,
+    totalCount,
+    currentPage: page,
+    pageSize: limit,
+  };
 }

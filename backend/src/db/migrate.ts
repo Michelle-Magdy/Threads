@@ -32,9 +32,9 @@ async function runMigrations() {
 runMigrations()
   .then(() => {
     logger.info("All migrations runned successfully");
-    process.exit(1);
+    process.exit(0);
   })
   .catch((err) => {
-    logger.error({err,message:"Migrations Failed"});
+    logger.error({ err, message: "Migrations Failed" });
     process.exit(1);
   });

@@ -48,6 +48,8 @@ export type ThreadDetail = {
   };
   title: string;
   body: string;
+  likesCount: string;
+  commentsCount: string;
   createAt: Date;
   updatedAt: Date;
 };
@@ -61,6 +63,8 @@ export type ThreadDetailRow = {
   author_avatar_url: string | null;
   title: string;
   body: string;
+  likes_count:string;
+  comments_count:string;
   create_at: Date;
   updated_at: Date;
 };
@@ -79,6 +83,8 @@ export function hydrateThreadDetailRow(row: ThreadDetailRow): ThreadDetail {
     },
     title: row.title,
     body: row.body,
+    commentsCount:row.comments_count,
+    likesCount:row.likes_count,
     createAt: row.create_at,
     updatedAt: row.updated_at,
   };
@@ -117,7 +123,7 @@ export type ThreadSummary = {
   };
   title: string;
   excerpt: string;
-  createAt: Date;
+  createdAt: Date;
   updatedAt: Date;
 };
 
@@ -130,7 +136,7 @@ export type ThreadSummaryRow = {
   author_avatar_url: string | null;
   title: string;
   excerpt: string;
-  create_at: Date;
+  created_at: Date;
   updated_at: Date;
 };
 
@@ -148,7 +154,48 @@ export function hydrateThreadSummaryRow(row: ThreadSummaryRow): ThreadSummary {
     },
     title: row.title,
     excerpt: row.excerpt,
-    createAt: row.create_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export type ThreadListResult = {
+  threads?: ThreadSummary[];
+  totalPages?: number;
+  totalCount?: number;
+  currentPage?: number;
+  pageSize?: number;
+};
+
+export type CommentRow = {
+  id: number;
+  display_name: string;
+  handle: string;
+  body: string;
+  created_at: Date;
+  updated_at?: Date;
+};
+
+export type Comment = {
+  id: number;
+  author: {
+    displayName: string;
+    handle: string;
+  };
+  body: string;
+  createdAt: Date;
+  updatedAt?: Date;
+};
+
+export function mapCommentRow(row: CommentRow): Comment {
+  return {
+    id: row.id,
+    author: {
+      displayName: row.display_name,
+      handle: row.handle,
+    },
+    body: row.body,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
