@@ -44,7 +44,7 @@ export async function apiGet<T>(
 export async function apiPost<TBody,TResponse>(
     client: AxiosInstance,
     url: string,
-    body:TBody,
+    body?:TBody,
     config?: AxiosRequestConfig
 ): Promise<TResponse>{
     const res = await client.post<{data: TResponse}>(url,body,config);

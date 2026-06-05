@@ -12,9 +12,14 @@ CREATE TABLE IF NOT EXISTS threads(
     author_id BIGINT NOT NULL REFERENCES users(id),
     title TEXT NOT NULL,
     body TEXT NOT NULL,
+    likes_count INT DEFAULT 0,
+    comments_count INT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE threads
+ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_thread_category_created_at
 ON threads(category_id,created_at DESC);

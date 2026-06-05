@@ -9,6 +9,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
 import Navbar from "@/components/layout/Navbar";
+import { UserProvider } from "@/store/UserContext";
 
 const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'});
 
@@ -38,21 +39,23 @@ export default function RootLayout({
         theme: dark,
       }}
     >
-      <html lang="en" className={cn("dark", "font-sans", dmSans.variable)}>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <div className="flex min-h-screen flex-col bg-background text-foreground">
-            <Navbar/>
-            <main className="flex flex-1 flex-col ">
-              <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 md:py-10">
-                {children}
-              </div>
-            </main>
-          </div>
-          <Toaster/>
-        </body>
-      </html>
+      <UserProvider>
+        <html lang="en" className={cn("dark", "font-sans", dmSans.variable)}>
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          >
+            <div className="flex min-h-screen flex-col bg-background text-foreground">
+              <Navbar />
+              <main className="flex flex-1 flex-col ">
+                <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 md:py-10">
+                  {children}
+                </div>
+              </main>
+            </div>
+            <Toaster />
+          </body>
+        </html>
+      </UserProvider>
     </ClerkProvider>
   );
 }

@@ -10,7 +10,6 @@ import {
   ThreadDetailRow,
   ThreadListFilter,
   ThreadListResult,
-  ThreadSummary,
   ThreadSummaryRow,
 } from "./thread.types.js";
 

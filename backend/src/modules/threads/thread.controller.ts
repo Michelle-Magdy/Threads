@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import {
   createNewThread,
-  getThreadById,
   listCategories,
   listThreads,
   parseThreadsFilterList,
@@ -10,13 +9,26 @@ import z from "zod";
 import { getAuth } from "@clerk/express";
 import { BadRequest, UnAuthorizedError } from "../../lib/errors.js";
 import { getUserFromClerk } from "../users/user.service.js";
-import { createComment, deleteComment, findCommentAuthor, likeThread, listCommentsForThread, removeLikeFromThread } from "./replies.repository.js";
-import { fetchThreadWithDetails } from "./thread.service.js";
+import {
+  createComment,
+  deleteComment,
+  findCommentAuthor,
+  toggleLikeThread,
+  listCommentsForThread,
+  toggleLikeComment,
+} from "./replies.repository.js";
+import { buildCommentsTree, fetchThreadWithDetails } from "./thread.service.js";
+import { createCommentThreadNotification, createLikeThreadNotification } from "../notifications/notifications.service.js";
 
 const ThreadSchema = z.object({
   title: z.string().trim().min(3),
   body: z.string().trim().min(10),
   categorySlug: z.string().trim(),
+});
+
+const CommentSchema = z.object({
+  body: z.string().trim().min(3),
+  parentId: z.coerce.number().int().positive().optional(),
 });
 
 export async function getAllCategoriesHandler(
@@ -75,7 +87,7 @@ export async function getThreadByIdHandler(
   next: NextFunction,
 ) {
   try {
-    const threadId = Number(req.params);
+    const threadId = Number(req.params.threadId);
 
     if (!Number.isInteger(threadId)) {
       throw new BadRequest("thread id must be number");
@@ -88,7 +100,7 @@ export async function getThreadByIdHandler(
 
     const profile = await getUserFromClerk(userId);
 
-    const thread = await fetchThreadWithDetails(threadId,profile.user.id);
+    const thread = await fetchThreadWithDetails(threadId, profile.user.id);
 
     return res.json({ data: thread });
   } catch (err) {
@@ -118,7 +130,6 @@ export async function getThreadsHandler(
 
     const threadsList = await listThreads(filters);
 
-    console.log(threadsList);
     return res.json({
       data: threadsList,
     });
@@ -137,13 +148,20 @@ export async function getCommentsHandler(
     if (!userId) {
       throw new UnAuthorizedError("you are not authorized to create thread");
     }
+    const profile = await getUserFromClerk(userId);
     const threadId = Number(req.params.threadId);
+    const userIdNum = Number(profile?.user?.id);
 
     if (!Number.isInteger(threadId)) {
       throw new BadRequest("thread id must be number");
     }
+    if (!Number.isInteger(userIdNum)) {
+      throw new BadRequest("user id must be number");
+    }
 
-    const comments = await listCommentsForThread(threadId);
+    const rawComments = await listCommentsForThread(threadId, userIdNum);
+
+    const comments = buildCommentsTree(rawComments);
 
     res.json({ data: comments });
   } catch (err) {
@@ -167,23 +185,31 @@ export async function postCommentHandler(
     if (!Number.isInteger(threadId)) {
       throw new BadRequest("thread id must be number");
     }
-
-    const bodyRaw = typeof req?.body?.body === "string" ? req.body.body : "";
-    if (bodyRaw.trim().length <= 2) {
-      throw new BadRequest("the comment is too short");
+    
+    const parsedBody = CommentSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({ err: parsedBody.error });
     }
 
     const profile = await getUserFromClerk(userId);
 
-    const comment = await createComment(threadId, profile.user.id, bodyRaw);
-
+    const comment = await createComment(
+      threadId,
+      profile,
+      parsedBody.data.body,
+      parsedBody.data.parentId,
+    );
+    
     // notification ->trigger-> to the thread author
+    await createCommentThreadNotification({
+      threadId:threadId,
+      actorUserId:profile.user.id
+    })
     res.status(201).json({ data: comment });
   } catch (err) {
     next(err);
   }
 }
-
 
 export async function deleteCommentHandler(
   req: Request,
@@ -205,8 +231,10 @@ export async function deleteCommentHandler(
     const profile = await getUserFromClerk(userId);
     const authorId = await findCommentAuthor(commentId);
 
-    if(profile.user.id !== authorId){
-      throw new UnAuthorizedError("you are not authorized to delete this comment");
+    if (profile.user.id !== authorId) {
+      throw new UnAuthorizedError(
+        "you are not authorized to delete this comment",
+      );
     }
 
     await deleteComment(commentId);
@@ -217,7 +245,7 @@ export async function deleteCommentHandler(
   }
 }
 
-export async function likeThreadHandler(
+export async function toggleLikeCommentHandler(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -225,30 +253,31 @@ export async function likeThreadHandler(
   try {
     const { userId } = getAuth(req);
     if (!userId) {
-      throw new UnAuthorizedError("you are not authorized to create thread");
+      throw new UnAuthorizedError("you are not authorized to create comment");
     }
 
-    const threadId = Number(req.params.threadId);
+    const commentId = Number(req.params.commentId);
 
-    if (!Number.isInteger(threadId)) {
-      throw new BadRequest("thread id must be number");
+    if (!Number.isInteger(commentId)) {
+      throw new BadRequest("comment id must be number");
     }
 
     const profile = await getUserFromClerk(userId);
 
-    await likeThread(profile.user.id,threadId);
+    const action = await toggleLikeComment(profile.user.id, commentId);
+    if(action === 'LIKED'){
+      // send notification to author of the thread
+      
+    }
 
-    // send notification to author of the thread
 
     res.status(204).send();
-
-
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 }
 
-export async function removeLikeThreadHandler(
+export async function toggleLikeThreadHandler(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -267,10 +296,15 @@ export async function removeLikeThreadHandler(
 
     const profile = await getUserFromClerk(userId);
 
-    await removeLikeFromThread(profile.user.id, threadId);
+    const action = await toggleLikeThread(profile.user.id, threadId);
 
-    // send notification to author of the thread
-
+    if (action === "LIKED") {
+      // send notification to author of the thread
+      await createLikeThreadNotification({
+        threadId:threadId,
+        actorUserId:profile.user.id
+      });
+    }
     res.status(204).send();
   } catch (err) {
     next(err);

@@ -20,6 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
+import Image from "next/image";
 
 function ThreadsSection() {
   const router = useRouter();
@@ -47,6 +48,7 @@ function ThreadsSection() {
 
   // Load categories once on mount
   useEffect(() => {
+    const isMounted = true;
     async function loadCategories() {
       try {
         const fetchedCategories = await apiGet<Category[]>(
@@ -81,7 +83,7 @@ function ThreadsSection() {
             },
           },
         );
-      
+
         const nextThreads = Array.isArray(result.threads) ? result.threads : [];
 
         setThreads(nextThreads);
@@ -243,38 +245,52 @@ function ThreadsSection() {
                 className="group cursor-pointer border-border/70 bg-card transition-colors duration-150 border hover:border-primary/80 hover:bg-card/90"
               >
                 <Link href={`threads/${thread.id}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <Badge
-                            variant={"outline"}
-                            className="border-border/70 bg-secondary/70 text-[12px]"
-                          >
-                            {thread.category.name}
-                          </Badge>
-                          {thread.author?.handle && (
-                            <Badge className="text-chart-1 bg-chart-1/15">
-                              <span>@{thread.author.handle}</span>
-                            </Badge>
-                          )}
-                          <span className="text-muted-foreground">
-                            {new Date(thread.createdAt).toLocaleDateString(
-                              "en-US",
-                            )}
-                          </span>
-                        </div>
-                        <CardTitle className="text-lg text-foreground font-semibold group-hover:text-primary transition-colors duration-150">
-                          {thread.title}
-                        </CardTitle>
-                      </div>
+                  <div className="px-4 flex items-start">
+                    <div>
+                      <Image
+                        src={thread.author.avatarUrl || ""}
+                        alt={thread.author.displayName || ""}
+                        width={40}
+                        height={40}
+                        unoptimized
+                        className="rounded-full w-10 h-10"
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3 pb-4">
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      {thread.excerpt}
-                    </p>
-                  </CardContent>
+                    <div>
+                      <CardHeader className="pb-3 flex items-start justify-start gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground ">
+                              <Badge
+                                variant={"outline"}
+                                className="border-border/70 bg-secondary/70 text-[12px]"
+                              >
+                                {thread.category.name}
+                              </Badge>
+                              {thread.author?.handle && (
+                                <Badge className="text-chart-1 bg-chart-1/15">
+                                  <span>@{thread.author.handle}</span>
+                                </Badge>
+                              )}
+                              <span className="text-muted-foreground">
+                                {new Date(thread.createdAt).toLocaleDateString(
+                                  "en-US",
+                                )}
+                              </span>
+                            </div>
+                            <CardTitle className="text-lg text-foreground font-semibold group-hover:text-primary transition-colors duration-150">
+                              {thread.title}
+                            </CardTitle>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pb-4">
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
+                          {thread.excerpt}
+                        </p>
+                      </CardContent>
+                    </div>
+                  </div>
                 </Link>
               </Card>
             ))}

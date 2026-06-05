@@ -48,8 +48,8 @@ export type ThreadDetail = {
   };
   title: string;
   body: string;
-  likesCount: string;
-  commentsCount: string;
+  likesCount: number;
+  commentsCount: number;
   createAt: Date;
   updatedAt: Date;
 };
@@ -63,9 +63,9 @@ export type ThreadDetailRow = {
   author_avatar_url: string | null;
   title: string;
   body: string;
-  likes_count:string;
-  comments_count:string;
-  create_at: Date;
+  likes_count: string;
+  comments_count: string;
+  created_at: Date;
   updated_at: Date;
 };
 
@@ -83,9 +83,9 @@ export function hydrateThreadDetailRow(row: ThreadDetailRow): ThreadDetail {
     },
     title: row.title,
     body: row.body,
-    commentsCount:row.comments_count,
-    likesCount:row.likes_count,
-    createAt: row.create_at,
+    commentsCount: Number(row.comments_count),
+    likesCount: Number(row.likes_count),
+    createAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
@@ -172,6 +172,10 @@ export type CommentRow = {
   display_name: string;
   handle: string;
   body: string;
+  parent_id: number;
+  is_liked: boolean;
+  likes_count: number;
+  avatar_url: string;
   created_at: Date;
   updated_at?: Date;
 };
@@ -181,8 +185,13 @@ export type Comment = {
   author: {
     displayName: string;
     handle: string;
+    avatarUrl: string;
   };
   body: string;
+  parentId: number;
+  likesCount: number;
+  replies: Comment[];
+  isLiked: boolean;
   createdAt: Date;
   updatedAt?: Date;
 };
@@ -193,7 +202,12 @@ export function mapCommentRow(row: CommentRow): Comment {
     author: {
       displayName: row.display_name,
       handle: row.handle,
+      avatarUrl: row.avatar_url,
     },
+    isLiked: row.is_liked,
+    replies: [],
+    parentId: row.parent_id,
+    likesCount: row.likes_count,
     body: row.body,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

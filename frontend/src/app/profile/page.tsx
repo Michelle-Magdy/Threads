@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiGet, apiPatch, createBrowserApiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { UserProfileResponse } from "@/types/user";
 import { Show, useAuth } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Save, User } from "lucide-react";
@@ -25,15 +26,7 @@ const ProfileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof ProfileSchema>;
 
-type UserProfileResponse = {
-  id: number;
-  clerkUserId: string | null;
-  email: string | null;
-  displayName: string | null;
-  handle: string | null;
-  avatarURL: string | null;
-  bio: string | null;
-};
+
 
 function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);

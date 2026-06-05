@@ -15,6 +15,26 @@ export type ThreadDetailResponse = {
   updatedAt: Date;
 };
 
+export type Thread= {
+  isLiked: boolean;
+  id: number;
+  category: {
+    name: string;
+    slug: string;
+  };
+  author: {
+    displayName: string | null;
+    handle: string | null;
+    avatarUrl: string | null;
+  };
+  title: string;
+  body: string;
+  likesCount: number;
+  commentsCount: number;
+  createAt: Date;
+  updatedAt: Date;
+};
+
 export type Category = {
   id: number;
   slug: string;
@@ -46,3 +66,20 @@ export type ThreadListResult = {
     currentPage?: number;
     pageSize?: number;
 };
+
+export type Comment = {
+  id: number;
+  author: {
+    displayName: string;
+    handle: string;
+    avatarUrl: string;
+  };
+  isLiked:boolean;
+  body: string;
+  parentId: number;
+  likesCount: number;
+  replies: Comment[];
+  createdAt: Date;
+  updatedAt?: Date;
+};
+

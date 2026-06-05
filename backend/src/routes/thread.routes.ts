@@ -6,9 +6,9 @@ import {
   getCommentsHandler,
   getThreadByIdHandler,
   getThreadsHandler,
-  likeThreadHandler,
+  toggleLikeThreadHandler,
   postCommentHandler,
-  removeLikeThreadHandler,
+  toggleLikeCommentHandler,
 } from "../modules/threads/thread.controller.js";
 
 const threadsRouter = Router();
@@ -32,8 +32,9 @@ threadsRouter.post("/:threadId/comments", postCommentHandler);
 
 threadsRouter.delete("/comments/:commentId", deleteCommentHandler);
 
-threadsRouter.post("/:threadId/like", likeThreadHandler);
+threadsRouter.post("/comments/:commentId/like", toggleLikeCommentHandler);
 
-threadsRouter.delete("/:threadId/like", removeLikeThreadHandler);
+threadsRouter.post("/:threadId/like", toggleLikeThreadHandler);
+
 
 export default threadsRouter;
