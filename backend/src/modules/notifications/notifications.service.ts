@@ -1,4 +1,5 @@
 import { query } from "../../db/db.js";
+import { getIO } from "../../realtime/io.js";
 import { mapNotificationRow, NotificationRow } from "./notifications.types.js";
 
 
@@ -55,42 +56,49 @@ export async function createCommentThreadNotification(params:{
     const payload = mapNotificationRow(fullRow);
 
     //emit notification
-
+    const io = getIO();
+    if(io){
+        io.to(`notifications:user:${authorId}`).emit("notification:new",payload);
+    }
 }
 
 
-export async function createLikeThreadNotification(params:{
-    threadId:number;
-    actorUserId:number;
-}){
-    const {threadId,actorUserId} = params;
+export async function createLikeThreadNotification(params: {
+  threadId: number;
+  actorUserId: number;
+}) {
+  const { threadId, actorUserId } = params;
 
-    const threadRes = await query(`
+  const threadRes = await query(
+    `
         SELECT author_id
         FROM threads
         WHERE id = $1
         LIMIT 1
-        `,[threadId]);
-    const threadRow = threadRes.rows[0] as {author_id:number} | undefined;
-    if(!threadRow) return;
+        `,
+    [threadId],
+  );
+  const threadRow = threadRes.rows[0] as { author_id: number } | undefined;
+  if (!threadRow) return;
 
-    const authorId = threadRow.author_id;
-    if(authorId === actorUserId) return;
+  const authorId = threadRow.author_id;
+  if (authorId === actorUserId) return;
 
-    const insertRes = await query(
-      `
+  const insertRes = await query(
+    `
         INSERT INTO notifications(user_id,actor_user_id,type,thread_id)
         VALUES ($1,$2,$3,$4)
         RETURNING id
         `,
-      [authorId, actorUserId, "LIKE_ON_THREAD",threadId],
-    );
+    [authorId, actorUserId, "LIKE_ON_THREAD", threadId],
+  );
 
-    const notiRows = insertRes.rows[0] as {id:number};
+  const notiRows = insertRes.rows[0] as { id: number };
 
-    if(!notiRows) return;
+  if (!notiRows) return;
 
-    const fullRes = await query(`
+  const fullRes = await query(
+    `
         SELECT
             n.id,
             u.display_name AS actor_display_name,
@@ -105,14 +113,150 @@ export async function createLikeThreadNotification(params:{
         JOIN threads AS t ON n.thread_id = t.id
         WHERE n.id = $1
         LIMIT 1
-        `,[notiRows.id]);
-    
-    const fullRow = fullRes.rows[0] as NotificationRow | undefined;
-    if(!fullRow) return ;
-    const payload = mapNotificationRow(fullRow);
+        `,
+    [notiRows.id],
+  );
 
-    //emit notification
+  const fullRow = fullRes.rows[0] as NotificationRow | undefined;
+  if (!fullRow) return;
+  const payload = mapNotificationRow(fullRow);
+  
+  //emit notification
+  const io = getIO();
+  if (io) {
+      io.to(`notifications:user:${authorId}`).emit("notification:new", payload);
+  }
+}
 
+export async function createLikeCommentNotification(params: {
+    threadId:number;
+  commentId: number;
+  actorUserId: number;
+}) {
+  const { commentId, actorUserId ,threadId} = params;
+
+  const threadRes = await query(
+    `
+        SELECT user_id
+        FROM thread_comments
+        WHERE id = $1
+        LIMIT 1
+        `,
+    [commentId],
+  );
+  const threadRow = threadRes.rows[0] as { user_id: number } | undefined;
+  if (!threadRow) return;
+
+  const authorId = threadRow.user_id;
+  if (authorId === actorUserId) return;
+
+  const insertRes = await query(
+    `
+        INSERT INTO notifications(user_id,actor_user_id,type,thread_id)
+        VALUES ($1,$2,$3,$4)
+        RETURNING id
+        `,
+    [authorId, actorUserId, "LIKE_ON_COMMENT", threadId],
+  );
+
+  const notiRows = insertRes.rows[0] as { id: number };
+
+  if (!notiRows) return;
+
+  const fullRes = await query(
+    `
+        SELECT
+            n.id,
+            u.display_name AS actor_display_name,
+            u.handle AS actor_handle,
+            n.type,
+            n.thread_id,
+            n.created_at,
+            n.read_at,
+            t.title AS thread_title
+        FROM notifications AS n
+        JOIN users AS u ON n.actor_user_id = u.id
+        JOIN threads AS t ON n.thread_id = t.id
+        WHERE n.id = $1
+        LIMIT 1
+        `,
+    [notiRows.id],
+  );
+
+  const fullRow = fullRes.rows[0] as NotificationRow | undefined;
+  if (!fullRow) return;
+  const payload = mapNotificationRow(fullRow);
+  
+  //emit notification
+  const io = getIO();
+  if (io) {
+      io.to(`notifications:user:${authorId}`).emit("notification:new", payload);
+  }
+}
+
+export async function createReplyCommentNotification(params: {
+  commentId: number;
+  actorUserId: number;
+}) {
+  const { commentId, actorUserId } = params;
+
+  const commentRes = await query(
+    `
+        SELECT user_id
+        FROM thread_comments
+        WHERE id = $1
+        LIMIT 1
+        `,
+    [commentId],
+  );
+  const commentRow = commentRes.rows[0] as { user_id: number } | undefined;
+  if (!commentRow) return;
+
+  const authorId = commentRow.user_id;
+  if (authorId === actorUserId) return;
+
+  const insertRes = await query(
+    `
+        INSERT INTO notifications(user_id,actor_user_id,type,thread_id)
+        VALUES ($1,$2,$3,$4)
+        RETURNING id
+        `,
+    [authorId, actorUserId, "REPLY_ON_COMMENT", commentId],
+  );
+
+  const notiRows = insertRes.rows[0] as { id: number };
+
+  if (!notiRows) return;
+
+  const fullRes = await query(
+    `
+        SELECT
+            n.id,
+            u.display_name AS actor_display_name,
+            u.handle AS actor_handle,
+            n.type,
+            n.thread_id,
+            n.created_at,
+            n.read_at,
+            t.title AS thread_title
+        FROM notifications AS n
+        JOIN users AS u ON n.actor_user_id = u.id
+        JOIN threads AS t ON n.thread_id = t.id
+        WHERE n.id = $1
+        LIMIT 1
+        `,
+    [notiRows.id],
+  );
+
+  const fullRow = fullRes.rows[0] as NotificationRow | undefined;
+  if (!fullRow) return;
+  const payload = mapNotificationRow(fullRow);
+  
+  //emit notification
+  const io = getIO();
+  if (io) {
+      io.to(`notifications:user:${authorId}`).emit("notification:new", payload);
+  }
 }
 
 

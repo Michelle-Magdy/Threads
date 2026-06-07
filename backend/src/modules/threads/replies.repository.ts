@@ -121,18 +121,22 @@ export async function deleteComment(commentId: number) {
 
 // like
 export async function toggleLikeThread(userId: number, threadId: number) {
+  try{
+
+  
   const result = await query(
     `
         WITH deleted AS(
           DELETE FROM thread_likes
           WHERE user_id = $1 AND thread_id = $2
           RETURNING *
-        )
-        WITH inserted(
+        ),
+        inserted AS(
           INSERT INTO thread_likes(user_id,thread_id)
           SELECT $1,$2
           WHERE NOT EXISTS(SELECT 1 FROM deleted)
           ON CONFLICT (thread_id,user_id) DO NOTHING
+          RETURNING *
           )
         SELECT 
           CASE 
@@ -143,6 +147,9 @@ export async function toggleLikeThread(userId: number, threadId: number) {
     [userId, threadId],
   );
   return result.rows[0].action;
+}catch(err){
+  console.log(err);
+}
 }
 
 export async function toggleLikeComment(userId: number, commentId: number) {
@@ -152,8 +159,8 @@ export async function toggleLikeComment(userId: number, commentId: number) {
           DELETE FROM comment_likes
           WHERE user_id = $1 AND comment_id = $2
           RETURNING *
-        )
-        WITH inserted(
+        ),
+        inserted AS(
           INSERT INTO comment_likes(user_id,comment_id)
           SELECT $1,$2
           WHERE NOT EXISTS(SELECT 1 FROM deleted)

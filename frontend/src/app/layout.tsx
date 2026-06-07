@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import {
-  ClerkProvider,
-} from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 
 import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
@@ -10,8 +8,9 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { UserProvider } from "@/store/UserContext";
+import { NotificationProvider } from "@/store/NotificationContext";
 
-const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'});
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,21 +39,28 @@ export default function RootLayout({
       }}
     >
       <UserProvider>
-        <html lang="en" className={cn("dark", "font-sans", dmSans.variable)}>
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        <NotificationProvider>
+          <html
+            lang="en"
+            className={cn("dark", "font-sans", dmSans.variable)}
+            suppressHydrationWarning
           >
-            <div className="flex min-h-screen flex-col bg-background text-foreground">
-              <Navbar />
-              <main className="flex flex-1 flex-col ">
-                <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 md:py-10">
-                  {children}
-                </div>
-              </main>
-            </div>
-            <Toaster />
-          </body>
-        </html>
+            <body
+              suppressHydrationWarning
+              className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            >
+              <div className="flex min-h-screen flex-col bg-background text-foreground">
+                <Navbar />
+                <main className="flex flex-1 flex-col ">
+                  <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 md:py-10">
+                    {children}
+                  </div>
+                </main>
+              </div>
+              <Toaster />
+            </body>
+          </html>
+        </NotificationProvider>
       </UserProvider>
     </ClerkProvider>
   );

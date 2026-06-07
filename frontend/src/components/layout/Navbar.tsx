@@ -1,18 +1,87 @@
 "use client";
 
-import { Show, UserButton } from "@clerk/nextjs";
+import { getToken, Show, useAuth, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { Bell, Menu } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/hooks/useSocket";
+import { useNotification } from "@/hooks/useNotification";
+import { apiGet, createBrowserApiClient } from "@/lib/api-client";
+import { Notification } from "@/types/notification";
+import { describe } from "node:test";
+import { toast } from "sonner";
 
 function Navbar() {
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement>(null);
+  const { socket, connected } = useSocket();
+  const { unreadCount, incrementUnread, setUnreadCount, decrementUnread } =
+    useNotification();
+  const { userId, getToken } = useAuth();
+  const apiClient = useMemo(() => createBrowserApiClient(getToken), [getToken]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUnreadNotifications() {
+      if (!userId) {
+        if (isMounted) setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const data = await apiGet<Notification[]>(
+          apiClient,
+          `/api/v1/notifications?unreadOnly=true`,
+        );
+
+        if (!isMounted) return;
+        setUnreadCount(data.length);
+      } catch (err) {
+        if (!isMounted) return;
+        console.log(err);
+      }
+    }
+
+    loadUnreadNotifications();
+    return () => {
+      isMounted = false;
+    };
+  }, [setUnreadCount, userId, apiClient]);
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    function handleNewNotification(payload: Notification) {
+      incrementUnread();
+      toast(`New Notification`, {
+        description: () => {
+          if (payload.type === "LIKE_ON_THREAD") {
+            return `${payload.actor.handle ?? "someone"} liked on your thread`;
+          } else if (payload.type === "REPLY_ON_THREAD") {
+            return `${payload.actor.handle ?? "someone"} commented on your thread`;
+          }
+           else if (payload.type === "REPLY_ON_COMMENT") {
+            return `${payload.actor.handle ?? "someone"} replied to your comment`;
+          }
+          else if (payload.type === "LIKE_ON_COMMENT") {
+            return `${payload.actor.handle ?? "someone"} liked your comment`;
+          }
+        },
+      });
+    }
+
+    socket.on('notification:new',handleNewNotification);
+    return ()=>{
+      socket.off('notification:new',handleNewNotification);
+
+    }
+  }, [socket, incrementUnread]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

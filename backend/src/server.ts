@@ -3,6 +3,7 @@ import { createApp } from "./app.js";
 import { assertDatabaseConnection } from "./db/db.js";
 import { logger } from "./lib/logger.js";
 import { env } from './config/env.js';
+import { initIO } from './realtime/io.js';
 
 async function bootstrap(){
     try{
@@ -11,6 +12,7 @@ async function bootstrap(){
         const app  =  createApp();
         const server  = createServer(app);
         const port = Number(env.PORT) || 5000;
+        initIO(server);
 
         server.listen(port,()=>{
             logger.info(`server is now listening on port ${port} `)

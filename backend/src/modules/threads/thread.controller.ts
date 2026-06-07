@@ -18,7 +18,8 @@ import {
   toggleLikeComment,
 } from "./replies.repository.js";
 import { buildCommentsTree, fetchThreadWithDetails } from "./thread.service.js";
-import { createCommentThreadNotification, createLikeThreadNotification } from "../notifications/notifications.service.js";
+import { createCommentThreadNotification, createLikeThreadNotification ,createReplyCommentNotification,createLikeCommentNotification} from "../notifications/notifications.service.js";
+import { threadId } from "node:worker_threads";
 
 const ThreadSchema = z.object({
   title: z.string().trim().min(3),
@@ -199,7 +200,15 @@ export async function postCommentHandler(
       parsedBody.data.body,
       parsedBody.data.parentId,
     );
-    
+
+    // fix notification schema to make it works for comments also
+    // if(comment.parentId){
+    //   console.log(`[parent comment ID] --------> ${comment.parentId}`)
+    //   await createReplyCommentNotification({
+    //     commentId:comment.parentId,
+    //     actorUserId:profile.user.id
+    //   })
+    // }
     // notification ->trigger-> to the thread author
     await createCommentThreadNotification({
       threadId:threadId,
@@ -267,7 +276,11 @@ export async function toggleLikeCommentHandler(
     const action = await toggleLikeComment(profile.user.id, commentId);
     if(action === 'LIKED'){
       // send notification to author of the thread
-      
+      // await createLikeCommentNotification({
+      //   threadId:threadId
+      //   commentId:commentId,
+      //   actorUserId:profile.user.id
+      // })
     }
 
 

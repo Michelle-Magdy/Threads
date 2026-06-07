@@ -19,7 +19,7 @@ notificationsRouter.get("/", async (req, res, next) => {
     }
     const profile = await getUserFromClerk(userId);
 
-    const isUnreadOnly = req.query.unreadOnly === "true";
+    const isUnreadOnly = req.query?.unreadOnly === "true";
 
     const notificaitons = await listNotificationsForUser({
       userId: profile.user.id,
@@ -44,7 +44,7 @@ notificationsRouter.post("/read-all", async (req, res, next) => {
 
     await markAllNotificationsRead({ userId: profile.user.id });
 
-    res.status(200);
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
@@ -65,7 +65,7 @@ notificationsRouter.post("/:id/read", async (req, res, next) => {
     }
     await markNotificationRead({ notificationId:notId});
 
-    res.status(200);
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

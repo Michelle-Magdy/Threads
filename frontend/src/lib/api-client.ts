@@ -1,4 +1,8 @@
-import axios, {type AxiosRequestConfig, type AxiosError, type AxiosInstance } from "axios";
+import axios, {
+  type AxiosRequestConfig,
+  type AxiosError,
+  type AxiosInstance,
+} from "axios";
 
 export function createBrowserApiClient(
   getToken: () => Promise<string | null>,
@@ -23,10 +27,6 @@ export function createBrowserApiClient(
       return response;
     },
     (err: AxiosError) => {
-         if (err.response?.status === 401) {
-           // Redirect to login or refresh token
-           window.location.href = "/login";
-         }
       return Promise.reject(err);
     },
   );
@@ -34,21 +34,21 @@ export function createBrowserApiClient(
 }
 
 export async function apiGet<T>(
-    client: AxiosInstance,
-    url: string,
-    config?: AxiosRequestConfig
-): Promise<T>{
-    const res = await client.get<{data: T}>(url,config);
-    return res.data.data;
+  client: AxiosInstance,
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const res = await client.get<{ data: T }>(url, config);
+  return res.data.data;
 }
-export async function apiPost<TBody,TResponse>(
-    client: AxiosInstance,
-    url: string,
-    body?:TBody,
-    config?: AxiosRequestConfig
-): Promise<TResponse>{
-    const res = await client.post<{data: TResponse}>(url,body,config);
-    return res.data.data;
+export async function apiPost<TBody, TResponse>(
+  client: AxiosInstance,
+  url: string,
+  body?: TBody,
+  config?: AxiosRequestConfig,
+): Promise<TResponse> {
+  const res = await client.post<{ data: TResponse }>(url, body, config);
+  return res.data.data;
 }
 export async function apiPatch<TBody, TResponse>(
   client: AxiosInstance,
@@ -56,24 +56,24 @@ export async function apiPatch<TBody, TResponse>(
   url: string,
   config?: AxiosRequestConfig,
 ): Promise<TResponse> {
-  const res = await client.patch<{ data: TResponse }>(url,body, config);
+  const res = await client.patch<{ data: TResponse }>(url, body, config);
   return res.data.data;
 }
 
 export async function apiDelete<T>(
-    client: AxiosInstance,
-    url: string,
-    config?: AxiosRequestConfig
-): Promise<T>{
-    const res = await client.delete<{data: T}>(url,config);
-    return res.data.data;
+  client: AxiosInstance,
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const res = await client.delete<{ data: T }>(url, config);
+  return res.data.data;
 }
 
 export async function apiPut<T>(
-    client: AxiosInstance,
-    url: string,
-    config?: AxiosRequestConfig
-): Promise<T>{
-    const res = await client.put<{data: T}>(url,config);
-    return res.data.data;
+  client: AxiosInstance,
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const res = await client.put<{ data: T }>(url, config);
+  return res.data.data;
 }
